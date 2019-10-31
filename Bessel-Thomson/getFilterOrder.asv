@@ -1,0 +1,31 @@
+function [n] = getFilterOrder(timeDelay, timeDelayFrequency, timeDelayError, passbandAttenuation, passbandFrequency)
+    normalized_td_freq = timeDelay*timeDelayFrequency;
+    normalized_atten_freq = timeDelay*passbandFrequency;
+    
+    constrainst_satisfied = 0;
+    n = 1;
+    while ~(constrainst_satisfied==3)
+        polynomial = getReverseBesselPolynomial(n);
+        
+        if ~(constrainst_satisfied==1)
+            w = [normalized_td_freq - 0.1*normalized_td_freq; 0.0001*normalized_td_freq; ]          
+            h_s = tf([polynomial(size(polynomial,2))], polynomial);
+            phase = unwrap(angle(evalfr(h_s, normalized_td_freq)));
+            delayError = abs(1 - delay) * 100; 
+        end
+        
+        if ~(constrainst_satisfied==2)
+            mag_dB = -20*log10(abs(evalfr(h_s, normalized_atten_freq)));
+        end
+        
+        if delayError <= timeDelayError 
+            constrainst_satisfied = constrainst_satisfied | 1;
+        end
+        if mag_dB <= passbandAttenuation
+            constrainst_satisfied = constrainst_satisfied | 2;
+        end
+        
+        n = n+1;
+    end
+end
+
